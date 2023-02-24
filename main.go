@@ -18,9 +18,11 @@ func main() {
 	}
 	defer db.Close()
 
-	fa := handlers.NewFetchAll(db)
+	fs := handlers.NewFetchStrikes(db)
+	ft := handlers.NewFetchThunders(db)
 	sm := http.NewServeMux()
-	sm.Handle("/", fa)
+	sm.Handle("/strikes", fs)
+	sm.Handle("/thunders", ft)
 
 	s := &http.Server{
 		Addr:         ":9090",
