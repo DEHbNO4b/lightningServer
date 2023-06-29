@@ -10,11 +10,9 @@ import (
 	"time"
 )
 
-var queryThunders string = `SELECT id,cluster,st_asText(geog),area,capacity,startTime,endTime FROM thunders ;`
-
 type thunder struct {
 	Id        int
-	Claster   int
+	Claster   string
 	Polygon   [][]float32
 	Area      float32   `json:"area"`
 	Capacity  int       `json:"capacity"`
@@ -32,13 +30,20 @@ func NewFetchThunders(db *sql.DB) FetchThunders {
 }
 
 func (f FetchThunders) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	var id, claster, capacity int
+	requestedDay := r.URL.Query().Get("day")
+	day, err := time.Parse("2006.01.02_MST", requestedDay)
+	if err != nil {
+		http.Error(rw, "Unable purse requested day", http.StatusInternalServerError)
+	}
+	day2 := day.AddDate(0, 0, 1)
+	var id, capacity int
 	var area float32
 	var startTime, endTime time.Time
-	var p string
+	var claster, p string
 	var data []thunder
 
-	rows, err := f.DB.Query(queryThunders)
+	rows, err := f.DB.Query(`SELECT id,cluster,st_asText(geog),area,capacity,startTime,endTime 
+							FROM thunders WHERE starttime BETWEEN $1 and $2;`, day, day2)
 	if err != nil {
 		http.Error(rw, "Unable to connect DB", http.StatusInternalServerError)
 	}

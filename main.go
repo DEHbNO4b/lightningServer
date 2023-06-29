@@ -20,9 +20,11 @@ func main() {
 
 	fs := handlers.NewFetchStrikes(db)
 	ft := handlers.NewFetchThunders(db)
+	fdc := handlers.NewFetchDayCollection(db)
 	sm := http.NewServeMux()
 	sm.Handle("/strikes", fs)
 	sm.Handle("/thunders", ft)
+	sm.Handle("/daycollection", fdc)
 
 	s := &http.Server{
 		Addr:         ":9090",
