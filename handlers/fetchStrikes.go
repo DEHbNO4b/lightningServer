@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ type strike struct {
 	Latitude  float32
 	Longitude float32
 	Cluster   string
+	Id        int
 }
 type FetchStrikes struct {
 	DB *sql.DB
@@ -29,21 +31,24 @@ func (f FetchStrikes) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	// day2 := day.AddDate(0, 0, 1)
 	time2 := day.Add(10 * time.Minute)
-	rows, err := f.DB.Query(`SELECT longitude,latitude,cluster FROM enstrikes where time between $1 and $2`, day, time2)
+	rows, err := f.DB.Query(`SELECT longitude,latitude,cluster,id FROM enstrikes where time >= $1 and time<$2`, day, time2)
 	if err != nil {
 		http.Error(rw, "Unable to connect DB", http.StatusInternalServerError)
 	}
 	defer rows.Close()
 	var long, lat float32
+	var id int
 	var cl string
 	var data []strike
 	for rows.Next() {
-		if err := rows.Scan(&long, &lat, &cl); err != nil {
-			continue
+		if err := rows.Scan(&long, &lat, &cl, &id); err != nil {
+
 			// http.Error(rw, "Unable to connect DB", http.StatusInternalServerError)
+			fmt.Println(err)
 			// return
 		}
-		s := strike{Longitude: long, Latitude: lat, Cluster: cl}
+		s := strike{Longitude: long, Latitude: lat, Cluster: cl, Id: id}
+		fmt.Println(cl)
 		if len(s.Cluster) > 2 {
 			c := s.Cluster[len(s.Cluster)-2:]
 			c, _ = strings.CutPrefix(c, ":")
@@ -52,7 +57,7 @@ func (f FetchStrikes) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 		data = append(data, s)
 	}
-
+	fmt.Println("count: ", len(data))
 	d, err := json.Marshal(data)
 
 	if err != nil {
